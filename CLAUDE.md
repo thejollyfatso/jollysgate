@@ -1,41 +1,36 @@
 # CLAUDE.md — Jolly's Gate (jollysgate)
 
-Full feature reference: `docs/reference-spec.md`
 Architectural decisions: `docs/decisions.md`
 
 ---
 
 ## What this app is
 
-A launchpad PWA for a small group of known users (family and friends) to access
-shared apps and tools. Not a public product. Simplicity is the priority.
+A frontend-only launchpad PWA for a small group of known users (family and
+friends). It is the home screen for a family of productivity PWAs. Users see
+app tiles on the home screen; tapping a tile navigates into that app via Vite
+module federation in the same window.
 
 ---
 
 ## Stack
 
-| Layer      | Choice                                                       |
-|------------|--------------------------------------------------------------|
-| Frontend   | React + Vite                                                 |
-| Backend    | FastAPI (Python) + SQLite, self-hosted on DigitalOcean       |
-| Auth       | Better Auth — magic link / OTP email only, no passwords      |
-| Email      | Resend                                                       |
-| Hosting    | DigitalOcean App Platform                                    |
-| PWA        | vite-plugin-pwa — installable, manifest, service worker stub |
-
-Frontend and static assets are served by the same FastAPI server in production
-(same origin, no CORS needed). Vite dev proxy handles this locally.
-SQLite file lives on the DigitalOcean Droplet. No external database service.
+| Layer       | Choice                                                        |
+|-------------|---------------------------------------------------------------|
+| Frontend    | React + Vite (frontend only — no backend)                    |
+| Routing     | react-router-dom v7 — URL routing for native back gesture     |
+| Federation  | @originjs/vite-plugin-federation — host, mounts remote apps  |
+| PWA         | vite-plugin-pwa — installable, manifest, service worker       |
+| Hosting     | TBD (static hosting)                                          |
 
 ---
 
 ## Environments
 
-| Name        | Purpose                                           |
-|-------------|---------------------------------------------------|
-| `local`     | `npm run dev` (client/) + `uvicorn` (server/)     |
-| `preview`   | Auto-deployed per PR by DigitalOcean App Platform |
-| `production`| Auto-deployed on push to `main`                   |
+| Name        | Purpose                                       |
+|-------------|-----------------------------------------------|
+| `local`     | `npm run dev` (client/)                       |
+| `production`| Push to `main` — CI builds, deploy TBD        |
 
 ---
 
@@ -44,27 +39,47 @@ SQLite file lives on the DigitalOcean Droplet. No external database service.
 ```
 jollysgate/
 ├── .github/workflows/ci.yml
-├── client/                  React + Vite frontend
+├── client/
+│   ├── public/
+│   │   ├── icon-192.png
+│   │   └── icon-512.png
 │   └── src/
+│       ├── main.jsx          entry
+│       ├── index.css         global reset + CSS vars
+│       ├── App.jsx           BrowserRouter + routes
 │       ├── components/
-│       ├── views/           One file per view
-│       ├── hooks/
-│       ├── utils/           apiFetch
-│       └── state/           App state — no external state library
-├── server/                  FastAPI backend
-│   ├── routers/             auth.py
-│   ├── tests/
-│   ├── db.py                SQLite connection + schema init
-│   └── main.py
+│       │   └── AppTile.jsx
+│       └── views/
+│           ├── Home.jsx      launchpad home screen
+│           └── FoodApp.jsx   nf4lm federation wrapper
 ├── docs/
-│   ├── reference-spec.md
 │   └── decisions.md
-├── .env.example
 ├── makefile
-├── requirements.txt
-├── requirements-dev.txt
 └── CLAUDE.md
 ```
+
+---
+
+## Remotes (federation)
+
+| App key | Exposed module | Remote entry URL                                              |
+|---------|---------------|---------------------------------------------------------------|
+| `nf4lm` | `./App`       | https://nf4lm.deleonanddeleon.com/assets/remoteEntry.js       |
+
+To add a new app: add a row to the `remotes` object in `vite.config.js`, add
+an `AppTile` entry in `client/src/views/Home.jsx`, and create a view wrapper
+in `client/src/views/`.
+
+---
+
+## Routing
+
+| Path      | View       | Notes                                |
+|-----------|------------|--------------------------------------|
+| `/`       | `Home`     | app tile grid                        |
+| `/food/*` | `FoodApp`  | renders nf4lm via module federation  |
+
+Back button / back gesture returns to `/` via native browser history.
 
 ---
 
@@ -72,33 +87,22 @@ jollysgate/
 
 ### Frontend
 
-- No client-side router. View switching via React state only.
-- No external state library. A single `useAppState` hook owns all app state.
-- All API calls go through `apiFetch(path, options)` — never call `fetch` directly.
-- `apiFetch` prepends `apiConfig.baseUrl`, attaches `Authorization: Bearer {token}`,
-  throws on non-2xx, and triggers logout on 401.
-- Auth token stored in `localStorage` as `mk_token`.
+- URL-based routing via react-router-dom — back gesture works natively.
+- No external state library — local React state only.
+- No API calls — this app has no backend.
 - Font size on all text inputs must be 16px minimum (prevents iOS zoom on focus).
-- No hover states — mobile-first, use `:active` only.
-
-### Backend
-
-- Every DB query must be scoped to `current_user.id` — no exceptions.
-- Auth middleware runs on every protected route before any DB access.
+- No hover states — mobile-first, use `:active` / pointer events only.
 
 ### Naming
 
 - Views: `PascalCase` components in `client/src/views/`
-- Utils: `camelCase` functions in `client/src/utils/`
-- API routes: snake_case
-- DB columns: snake_case
+- Components: `PascalCase` components in `client/src/components/`
 
 ### What NOT to do
 
-- Do not use a client-side router
-- Do not use a state management library
+- Do not add a backend or auth layer
+- Do not add a state management library
 - Do not add hover states
-- Do not make DB queries without `user_id` scoping
 
 ---
 
@@ -111,8 +115,6 @@ jollysgate/
 --color-bg:            #FAF8F5;
 --color-border:        #E5E0D8;
 --color-danger:        #EF4444;
---color-checked:       #9CA3AF;
---color-in-list:       #10B981;
 
 --radius-sm: 8px;
 --radius-md: 12px;
@@ -124,24 +126,8 @@ font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Ari
 
 ---
 
-## API contract
-
-```
-POST   /auth/magic       { email } → sends OTP, no auth required
-POST   /auth/verify      { email, code } → { token }
-
-GET    /health           → { ok: true, app: "jollysgate" }
-```
-
----
-
-## Known bugs to fix
-
-- `apple-touch-icon` points to `icon.svg` — add a PNG fallback for older iOS.
-
----
-
-## Deferred to v2
+## Deferred
 
 - Offline capability (service worker data caching)
 - App store wrapping (PWABuilder / Capacitor)
+- Replace placeholder PNG icons with designed assets

@@ -41,37 +41,47 @@ jobs:
       - run: npm ci
       - run: npx vitest run --passWithNoTests
 
-  test-backend:
-    name: Test Backend
+  build:
+    name: Build
     runs-on: ubuntu-latest
+    needs: [lint-frontend, test-frontend]
+    defaults:
+      run:
+        working-directory: client
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Run tests
-        run: pytest server/tests/
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run build
 
   deploy:
-    name: Deploy to Production
+    name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    needs: [lint-frontend, test-frontend, test-backend]
+    needs: [lint-frontend, test-frontend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 2222
-          script_stop: true
-          script: |
-            source ~/.nvm/nvm.sh
-            cd /home/gomburza/dev/jollysgate
-            git pull origin main
-            cd client && npm ci && npm run build && cd ..
-            .venv/bin/pip install -r requirements.txt
-            sudo systemctl restart jollysgate
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+        working-directory: client
+      - run: npm run build
+        working-directory: client
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

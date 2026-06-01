@@ -1,18 +1,16 @@
-.PHONY: install dev-client dev-server test lint format
+.PHONY: install dev build test lint format
 
 install:
 	cd client && npm install
-	cd server && python -m venv .venv && .venv/bin/pip install -r ../requirements-dev.txt
 
-dev-client:
+dev:
 	cd client && npm run dev
 
-dev-server:
-	cd server && ../.venv/bin/uvicorn main:app --reload --port 8000
+build:
+	cd client && npm run build
 
 test:
 	cd client && npm test
-	.venv/bin/pytest server/tests/
 
 lint:
 	cd client && npm run lint

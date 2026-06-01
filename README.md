@@ -6,31 +6,35 @@ A launchpad PWA for a small group of known users (family and friends) to access 
 
 ## Local development
 
-### Frontend
-
 ```bash
 cd client
 npm install
 npm run dev      # http://localhost:5173
 ```
 
-### Backend
+---
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/uvicorn server.main:app --reload --port 8000
-```
+## Deployment
 
-The Vite dev proxy forwards `/api` and `/events` to `http://localhost:8000`,
-so run both servers simultaneously during development.
+Pushes to `main` auto-deploy to GitHub Pages via CI. Before the first deploy, go to **Settings → Pages → Source** and select **GitHub Actions**.
 
-Verify the backend is up: `curl http://localhost:8000/health`
+The live site will be at `https://thejollyfatso.github.io/jollysgate/`.
+
+### Switching to a custom domain
+
+1. In `client/vite.config.js`, change the `VITE_BASE_PATH` fallback:
+   ```js
+   const base = process.env.VITE_BASE_PATH ?? "/";
+   ```
+2. Add a `CNAME` file to `client/public/` containing your domain:
+   ```
+   yourdomain.com
+   ```
+3. Point your domain's DNS to GitHub Pages (`185.199.108.153` etc.) and configure the custom domain in **Settings → Pages**.
 
 ---
 
 ## Further reading
 
-- **[CLAUDE.md](CLAUDE.md)** — stack, conventions, API contract, design tokens
-- **[docs/reference-spec.md](docs/reference-spec.md)** — full feature inventory
+- **[CLAUDE.md](CLAUDE.md)** — stack, conventions, design tokens
 - **[docs/decisions.md](docs/decisions.md)** — architectural decisions and rationale
