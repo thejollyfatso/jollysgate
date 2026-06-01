@@ -1,4 +1,4 @@
-# CLAUDE.md — No Food for Lazy Man (nf4lm)
+# CLAUDE.md — Jolly's Gate (jollysgate)
 
 Full feature reference: `docs/reference-spec.md`
 Architectural decisions: `docs/decisions.md`
@@ -7,10 +7,8 @@ Architectural decisions: `docs/decisions.md`
 
 ## What this app is
 
-A recipe manager and shared shopping list PWA for a small group of known users
-(family and friends). Not a public product. Greenfield rebuild of an existing
-single-user vanilla JS app. Simplicity and fidelity to the original UX are
-the priorities.
+A launchpad PWA for a small group of known users (family and friends) to access
+shared apps and tools. Not a public product. Simplicity is the priority.
 
 ---
 
@@ -23,7 +21,6 @@ the priorities.
 | Auth       | Better Auth — magic link / OTP email only, no passwords      |
 | Email      | Resend                                                       |
 | Hosting    | DigitalOcean App Platform                                    |
-| Realtime   | SSE (Server-Sent Events) — shopping lists only               |
 | PWA        | vite-plugin-pwa — installable, manifest, service worker stub |
 
 Frontend and static assets are served by the same FastAPI server in production
@@ -45,17 +42,17 @@ SQLite file lives on the DigitalOcean Droplet. No external database service.
 ## Repo structure
 
 ```
-nf4lm/
+jollysgate/
 ├── .github/workflows/ci.yml
 ├── client/                  React + Vite frontend
 │   └── src/
 │       ├── components/
 │       ├── views/           One file per view
 │       ├── hooks/
-│       ├── utils/           apiFetch, formatQty, normalizeIngredientName, parser
+│       ├── utils/           apiFetch
 │       └── state/           App state — no external state library
 ├── server/                  FastAPI backend
-│   ├── routers/             auth.py, recipes.py, shopping.py, events.py
+│   ├── routers/             auth.py
 │   ├── tests/
 │   ├── db.py                SQLite connection + schema init
 │   └── main.py
@@ -81,8 +78,6 @@ nf4lm/
 - `apiFetch` prepends `apiConfig.baseUrl`, attaches `Authorization: Bearer {token}`,
   throws on non-2xx, and triggers logout on 401.
 - Auth token stored in `localStorage` as `mk_token`.
-- All qty formatting goes through `formatQty()` — never format inline.
-- All ingredient name comparisons go through `normalizeIngredientName()`.
 - Font size on all text inputs must be 16px minimum (prevents iOS zoom on focus).
 - No hover states — mobile-first, use `:active` only.
 
@@ -90,15 +85,12 @@ nf4lm/
 
 - Every DB query must be scoped to `current_user.id` — no exceptions.
 - Auth middleware runs on every protected route before any DB access.
-- Shopping writes are always full rewrites (DELETE-all + INSERT-all in one
-  transaction). Check/uncheck and substitution are the only PATCH operations.
-- SSE endpoint (`/events`) is never cached by the service worker.
 
 ### Naming
 
 - Views: `PascalCase` components in `client/src/views/`
 - Utils: `camelCase` functions in `client/src/utils/`
-- API routes: snake_case, match the original API contract exactly
+- API routes: snake_case
 - DB columns: snake_case
 
 ### What NOT to do
@@ -107,11 +99,10 @@ nf4lm/
 - Do not use a state management library
 - Do not add hover states
 - Do not make DB queries without `user_id` scoping
-- Do not cache `/events` in the service worker
 
 ---
 
-## Design tokens (must match original app exactly)
+## Design tokens
 
 ```css
 --color-primary:       #E8623A;
@@ -139,27 +130,13 @@ font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Ari
 POST   /auth/magic       { email } → sends OTP, no auth required
 POST   /auth/verify      { email, code } → { token }
 
-GET    /recipes          → recipe[] ordered by created_at DESC
-POST   /recipes          → create → returns new recipe
-PATCH  /recipes/{id}     → update fields → returns updated recipe
-DELETE /recipes/{id}     → 204
-
-GET    /shopping         → { items: [...], meta: { addedRecipeIds,
-                             manualItems, suppressedItems, qtyOverrides } }
-POST   /shopping         → full rewrite; body: { items, addedRecipeIds,
-                             manualItems, suppressedItems, qtyOverrides }
-PATCH  /shopping/{id}    → { checked?, substitutedWith? }
-
-GET    /events           → SSE stream; events: recipes_changed, shopping_changed
-GET    /health           → { ok: true, app: "nf4lm" }
+GET    /health           → { ok: true, app: "jollysgate" }
 ```
 
 ---
 
-## Known bugs to fix (do not port from old app)
+## Known bugs to fix
 
-- Search bar CSS uses undefined variables (`var(--border)`, `var(--surface)`,
-  `var(--text)`, `var(--primary)`) — use correct tokens from the palette above.
 - `apple-touch-icon` points to `icon.svg` — add a PNG fallback for older iOS.
 
 ---

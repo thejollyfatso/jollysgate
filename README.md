@@ -1,7 +1,6 @@
-# No Food for Lazy Man
+# Jolly's Gate
 
-A recipe manager and shared shopping list PWA for a small group of known users
-(family and friends). Greenfield rebuild of an existing single-user vanilla JS app.
+A launchpad PWA for a small group of known users (family and friends) to access shared apps and tools.
 
 ---
 

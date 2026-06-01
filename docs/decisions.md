@@ -7,8 +7,7 @@
   bundling and dev tooling.
 
 - **Backend: FastAPI + SQLite.**
-  Same backend stack as existing app, self-hosted on DigitalOcean. SQLite is
-  sufficient for a small known-user group.
+  Self-hosted on DigitalOcean. SQLite is sufficient for a small known-user group.
 
 - **Auth: Better Auth with magic link / OTP.**
   No passwords. Users live in our own SQLite DB — no hosted identity system,
@@ -20,10 +19,6 @@
 - **Hosting: DigitalOcean App Platform.**
   Existing infrastructure, auto-deploys on push to main, preview URLs per PR,
   HTTPS out of the box.
-
-- **Realtime: SSE scoped to shopping lists only.**
-  Recipes are refresh-on-demand. WebSockets considered and rejected as overkill
-  for this scale.
 
 ## Deferred
 

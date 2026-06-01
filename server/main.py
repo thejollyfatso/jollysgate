@@ -3,17 +3,14 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(title="nf4lm")
+app = FastAPI(title="jollysgate")
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "app": "nf4lm"}
+    return {"ok": True, "app": "jollysgate"}
 
 
 # TODO: wire up routers once implemented
-# from server.routers import auth, recipes, shopping, events
+# from server.routers import auth
 # app.include_router(auth.router, prefix="/auth")
-# app.include_router(recipes.router, prefix="/recipes")
-# app.include_router(shopping.router, prefix="/shopping")
-# app.include_router(events.router)

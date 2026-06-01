@@ -66,11 +66,12 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 2222
           script_stop: true
           script: |
             source ~/.nvm/nvm.sh
-            cd /home/gomburza/dev/nofoodforlazyman
+            cd /home/gomburza/dev/jollysgate
             git pull origin main
             cd client && npm ci && npm run build && cd ..
             .venv/bin/pip install -r requirements.txt
-            sudo systemctl restart nf4lm
+            sudo systemctl restart jollysgate

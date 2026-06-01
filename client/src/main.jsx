@@ -21,7 +21,7 @@ function App() {
 
   return (
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial", padding: "24px" }}>
-      <div>!No Food for Lazy Man!</div>
+      <div>Jolly's Gate</div>
       <button
         onClick={checkHealth}
         disabled={loading}
