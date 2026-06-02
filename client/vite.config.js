@@ -18,7 +18,6 @@ export default defineConfig({
       shared: {
         react: { singleton: true },
         "react-dom": { singleton: true },
-        "react-router-dom": { singleton: true, requiredVersion: "^7.0.0" },
       },
     }),
     VitePWA({
